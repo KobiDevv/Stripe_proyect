@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stripe Checkout</title>
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+
+<h2>Pagar con Stripe</h2>
+
+<input type="number" id="amount" placeholder="Monto en MXN">
+<button id="payBtn">Pagar</button>
+
+<script>
+    const stripe = Stripe("{{ publishable_key }}");
+
+    document.getElementById("payBtn").onclick = async () => {
+        const amount = document.getElementById("amount").value;
+
+        const res = await fetch("/create-payment-intent", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({amount})
+        });
+
+        const data = await res.json();
+        const clientSecret = data.clientSecret;
+
+        stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+                card: {
+                    token: "tok_visa"
+                }
+            }
+        }).then(result => {
+            if (result.error) {
+                alert("Error: " + result.error.message);
+            } else {
+                alert("Pago completado!");
+            }
+        });
+    };
+</script>
+
+</body>
+</html>
