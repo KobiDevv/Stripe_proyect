@@ -1,7 +1,172 @@
-<!-- tu HTML aquí -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pago Seguro</title>
+
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b0e19;
+            color: white;
+        }
+
+        /* Banner ASCII */
+        pre.banner {
+            text-align: center;
+            font-size: 10px;
+            margin-top: 20px;
+            color: #00eaff;
+            text-shadow: 0 0 10px #00eaff;
+        }
+
+        .card {
+            background: #1a1e2e;
+            width: 380px;
+            padding: 25px;
+            margin: 40px auto;
+            border-radius: 14px;
+            box-shadow: 0 0 25px rgba(0,0,0,0.7);
+            text-align: center;
+        }
+
+        input {
+            width: 90%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            margin-bottom: 15px;
+        }
+
+        #payButton {
+            width: 95%;
+            padding: 14px;
+            background: #6c63ff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #loader {
+            margin-top: 10px;
+            display: none;
+            color: #aaa;
+        }
+
+        .msg-box {
+            display: none;
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .msg-error {
+            background: #ff3e3e33;
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+        }
+
+        .msg-success {
+            background: #3eff5b33;
+            color: #6bff8e;
+            border: 1px solid #6bff8e;
+        }
+    </style>
+</head>
+
+<body>
+
+<pre class="banner">
+░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░▒▓████████▓▒░▒▓█▓▒░
+░▒▓█▓▒░        ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░
+ ░▒▓██████▓▒░   ░▒▓██▓▒░     ░▒▓██▓▒░            ░▒▓██▓▒░  ░▒▓███████▓▒░▒▓█▓▒░
+</pre>
+
+<div class="card">
+    <h2>💳 Pago Seguro</h2>
+
+    <input id="amount" type="number" placeholder="Monto en MXN">
+
+    <div id="card-element" style="background:white; padding:10px; border-radius:8px;"></div>
+
+    <button id="payButton">PAGAR AHORA</button>
+
+    <div id="loader">Procesando pago...</div>
+
+    <div id="msg" class="msg-box"></div>
+</div>
 
 <script>
-   // aquí va el script que te di
+    const stripe = Stripe("{{ publishable_key }}");
+
+    const elements = stripe.elements();
+    const card = elements.create("card", { hidePostalCode: true });
+    card.mount("#card-element");
+
+    const payButton = document.getElementById("payButton");
+    const loader = document.getElementById("loader");
+    const msg = document.getElementById("msg");
+
+    function showMessage(text, type="error") {
+        msg.textContent = text;
+        msg.className = "msg-box msg-" + (type === "success" ? "success" : "error");
+        msg.style.display = "block";
+    }
+
+    payButton.addEventListener("click", async () => {
+        const amount = document.getElementById("amount").value;
+
+        if (!amount || amount <= 0) {
+            showMessage("⚠️ Ingresa un monto válido");
+            return;
+        }
+
+        msg.style.display = "none";
+        payButton.disabled = true;
+        loader.style.display = "block";
+
+        // Crear Payment Intent
+        const res = await fetch("/create-payment-intent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            showMessage("❌ Error: " + data.error);
+            payButton.disabled = false;
+            loader.style.display = "none";
+            return;
+        }
+
+        // Confirmar pago
+        const result = await stripe.confirmCardPayment(data.clientSecret, {
+            payment_method: { card: card }
+        });
+
+        if (result.error) {
+            showMessage("❌ Pago rechazado: " + result.error.message);
+            payButton.disabled = false;
+            loader.style.display = "none";
+        } else {
+            showMessage("✔ Pago exitoso, redirigiendo…", "success");
+            setTimeout(() => window.location.href = "/success", 800);
+        }
+    });
 </script>
 
 </body>
