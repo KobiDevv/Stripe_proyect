@@ -7,10 +7,13 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Clave secreta Stripe
+# 🔐 Clave secreta Stripe desde ENV en Render
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 
+# ============================================
+#   RUTA PRINCIPAL
+# ============================================
 @app.route("/")
 def index():
     return render_template(
@@ -19,28 +22,31 @@ def index():
     )
 
 
+# ============================================
+#   CREAR PAYMENT INTENT (corregido 2025)
+# ============================================
 @app.route("/create-payment-intent", methods=["POST"])
-def create_payment():
+def create_payment_intent():
     try:
         data = request.get_json()
 
-        amount_str = data.get("amount", "").strip()
+        amount_raw = str(data.get("amount", "0")).strip()
 
-        # Validación del monto recibido
-        if not amount_str.isdigit():
+        # Validar número real
+        if not amount_raw.replace(".", "", 1).isdigit():
             return jsonify({"error": "Monto inválido"}), 400
 
-        amount = int(amount_str)
+        amount_float = float(amount_raw)
 
-        if amount < 10:
-            return jsonify({"error": "El monto mínimo es $10 MXN"}), 400
+        # ⚡ Monto mínimo permitido por tu sistema
+        if amount_float < 1:
+            return jsonify({"error": "El monto mínimo es $1 MXN"}), 400
 
-        amount_centavos = amount * 100
+        amount = int(amount_float * 100)  # convertir a centavos
 
         intent = stripe.PaymentIntent.create(
-            amount=amount_centavos,
+            amount=amount,
             currency="mxn",
-            description="Pago desde la web",
             automatic_payment_methods={"enabled": True}
         )
 
@@ -50,9 +56,12 @@ def create_payment():
         return jsonify({"error": str(e)}), 400
 
 
+# ============================================
+#   PÁGINA DE ÉXITO (opcional)
+# ============================================
 @app.route("/success")
 def success():
-    return "<h1 style='color:green;text-align:center;'>✔ PAGO COMPLETADO</h1>"
+    return "<h1>✔ Pago realizado con éxito</h1>"
 
 
 if __name__ == "__main__":
