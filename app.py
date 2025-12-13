@@ -7,13 +7,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# 🔐 Claves Stripe obtenidas desde Environment Variables de Render
+# Clave secreta Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 
-# ======================
-#     RUTA PRINCIPAL
-# ======================
 @app.route("/")
 def index():
     return render_template(
@@ -22,23 +19,28 @@ def index():
     )
 
 
-# ==========================
-#   CREAR PAYMENT INTENT
-# ==========================
 @app.route("/create-payment-intent", methods=["POST"])
-def create_payment_intent():
+def create_payment():
     try:
         data = request.get_json()
 
-        # 🔥 Monto FIJO de $1 MXN
-        amount = 100
+        amount_str = data.get("amount", "").strip()
 
-        description = data.get("description", "Pago desde la web")
+        # Validación del monto recibido
+        if not amount_str.isdigit():
+            return jsonify({"error": "Monto inválido"}), 400
+
+        amount = int(amount_str)
+
+        if amount < 10:
+            return jsonify({"error": "El monto mínimo es $10 MXN"}), 400
+
+        amount_centavos = amount * 100
 
         intent = stripe.PaymentIntent.create(
-            amount=amount,
+            amount=amount_centavos,
             currency="mxn",
-            description=description,
+            description="Pago desde la web",
             automatic_payment_methods={"enabled": True}
         )
 
@@ -48,12 +50,9 @@ def create_payment_intent():
         return jsonify({"error": str(e)}), 400
 
 
-# ==========================
-#    SUCCESS PAGE OPCIONAL
-# ==========================
 @app.route("/success")
 def success():
-    return "<h1>PAGO COMPLETADO ✔</h1>"
+    return "<h1 style='color:green;text-align:center;'>✔ PAGO COMPLETADO</h1>"
 
 
 if __name__ == "__main__":
