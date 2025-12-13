@@ -30,8 +30,8 @@ def create_payment_intent():
     try:
         data = request.get_json()
 
-        # Monto recibido desde el frontend
-        amount = int(float(data["amount"]) * 100)  # Convierte MXN → centavos
+        # 🔥 Monto FIJO de $1 MXN
+        amount = 100
 
         description = data.get("description", "Pago desde la web")
 
