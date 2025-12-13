@@ -1,154 +1,61 @@
-}<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pago Seguro</title>
+<script>
+    const stripe = Stripe("{{ publishable_key }}");
 
-    <!-- Stripe.js -->
-    <script src="https://js.stripe.com/v3/"></script>
+    const elements = stripe.elements();
+    const card = elements.create("card", { hidePostalCode: true });
+    card.mount("#card-element");
 
-    <style>
-        body {
-            background: linear-gradient(180deg, #0a0f2d, #111);
-            margin: 0;
-            padding: 0;
-            font-family: "Poppins", sans-serif;
-            color: white;
+    const payButton = document.getElementById("payButton");
+    const loader = document.getElementById("loader");
+    const msg = document.getElementById("msg");
+
+    function showMessage(text, type = "error") {
+        msg.textContent = text;
+        msg.className = "msg-box msg-" + (type === "success" ? "success" : "error");
+        msg.style.display = "block";
+    }
+
+    payButton.addEventListener("click", async () => {
+        const amount = document.getElementById("amount").value;
+
+        if (!amount || amount <= 0) {
+            showMessage("⚠️ Ingresa un monto válido");
+            return;
         }
 
-        .banner {
-            width: 100%;
-            text-align: center;
-            padding: 20px 0;
-            margin-bottom: -40px;
+        msg.style.display = "none";
+        payButton.disabled = true;
+        loader.style.display = "block";
+
+        const res = await fetch("/create-payment-intent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            showMessage("❌ Error: " + data.error);
+            payButton.disabled = false;
+            loader.style.display = "none";
+            return;
         }
 
-        .container {
-            width: 420px;
-            margin: 100px auto;
-            background: rgba(255, 255, 255, 0.08);
-            padding: 30px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0px 0px 20px rgba(0, 0, 0, .4);
+        const result = await stripe.confirmCardPayment(data.clientSecret, {
+            payment_method: { card: card }
+        });
+
+        if (result.error) {
+            showMessage("❌ Pago rechazado: " + result.error.message);
+            payButton.disabled = false;
+            loader.style.display = "none";
+        } else {
+            showMessage("✔ Pago exitoso, redirigiendo…", "success");
+            setTimeout(() => { window.location.href = "/success"; }, 800);
         }
-
-        .title {
-            text-align: center;
-            font-size: 22px;
-            margin-bottom: 25px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            outline: none;
-            margin-bottom: 20px;
-            font-size: 16px;
-        }
-
-        #card-element {
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            border-radius: 8px;
-            border: none;
-            font-size: 18px;
-            color: white;
-            background: #5a56ff;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:disabled {
-            background: #4743b9;
-        }
-
-        .loader {
-            display: none;
-            margin-top: 10px;
-            text-align: center;
-            color: #ccc;
-            font-size: 14px;
-        }
-    </style>
-</head>
-
-<body>
-
-    <div class="banner">
-<pre style="font-size:9px; line-height: 10px;">
-░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░░▒▓█▓▒░      ░▒▓█▓▒░▒▓███████▓▒░ ░▒▓██████▓▒░▒▓████████▓▒░▒▓██████▓▒░░▒▓███████▓▒░  
-░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░░▒▓████████▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░  
-░▒▓█▓▒░        ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
- ░▒▓██████▓▒░   ░▒▓██▓▒░     ░▒▓██▓▒░            ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░▒▓█▓▒░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░ 
-</pre>
-    </div>
-
-    <div class="container">
-        <div class="title">💳 Pago Seguro</div>
-
-        <!-- Campo corregido -->
-        <input type="number" id="amount" value="50" placeholder="Monto en MXN">
-
-        <!-- Stripe card element -->
-        <div id="card-element"></div>
-
-        <button id="payButton">PAGAR AHORA</button>
-
-        <div class="loader" id="loader">Procesando pago...</div>
-    </div>
-
-    <script>
-        const stripe = Stripe("{{ publishable_key }}");
-
-        const elements = stripe.elements();
-        const card = elements.create("card", { hidePostalCode: true });
-        card.mount("#card-element");
-
-        const payButton = document.getElementById("payButton");
-        const loader = document.getElementById("loader");
-
-        payButton.addEventListener("click", async () => {
-            const amountField = document.getElementById("amount");
-
-            if (!amountField || !amountField.value) {
-                alert("Ingresa un monto válido");
-                return;
-            }
-
-            const amount = amountField.value;
-
-            payButton.disabled = true;
-            loader.style.display = "block";
-
-            // 1 — solicitar PaymentIntent al backend
-            const res = await fetch("/create-payment-intent", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount })
-            });
-
-            const data = await res.json();
-
-            if (data.error) {
-                alert("Error: " + data.error);
-                payButton.disabled = false;
-                loader.style.display = "none";
-                return;
-            }
+    });
+</script>
 
             // 2 — confirmar pago
             const result = await stripe.confirmCardPayment(data.clientSecret, {
