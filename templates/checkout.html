@@ -1,156 +1,180 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pago Seguro</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pago Seguro</title>
+<script src="https://js.stripe.com/v3/"></script>
 
-    <script src="https://js.stripe.com/v3/"></script>
+<style>
+    body {
+        margin: 0;
+        background: #0d0f18;
+        font-family: Arial, sans-serif;
+        color: white;
+        text-align: center;
+    }
 
-    <style>
-        body {
-            background: #0d0f1a;
-            font-family: Consolas, monospace;
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
+    /* 🔥 BANNER ASCII — no bloquea el touch */
+    .ascii-banner {
+        font-family: monospace;
+        white-space: pre;
+        color: #00eaff;
+        font-size: 10px;
+        margin-top: 20px;
+        line-height: 10px;
+        pointer-events: none; /* 👈 CLAVE PARA CELULAR */
+    }
 
-        /* BANNER ASCII */
-        .ascii-banner {
-            white-space: pre;
-            color: #00eaff;
-            font-size: 10px;
-            line-height: 10px;
-            margin-top: 20px;
-            text-shadow: 0 0 8px #00eaff, 0 0 15px #00eaff;
-            display: inline-block;
-        }
+    /* 🔥 Contenedor principal */
+    .card-box {
+        background: #1a1d29;
+        padding: 25px;
+        margin: 40px auto;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 380px; /* 👈 Responsivo */
+        box-shadow: 0 0 20px #0007;
+    }
 
-        .card-box {
-            background: #1c1f2e;
-            width: 380px;
-            margin: 40px auto;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 0 15px #0008;
-        }
+    input[type="number"] {
+        width: 100%;
+        padding: 12px;
+        border-radius: 6px;
+        border: none;
+        margin-bottom: 15px;
+        font-size: 16px;
+    }
 
-        input {
-            width: 92%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            border: none;
-            outline: none;
-            font-size: 15px;
-        }
+    #card-element {
+        padding: 12px;
+        background: #ffffff15;
+        border-radius: 8px;
+        margin-bottom: 15px;
+    }
 
-        .pay-btn {
-            width: 95%;
-            padding: 14px;
-            border: none;
-            background: #6d63ff;
-            color: white;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 10px;
-        }
+    #payButton {
+        width: 100%;
+        padding: 14px;
+        background: #6a63ff;
+        border: none;
+        color: white;
+        font-weight: bold;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
 
-        .error-box {
-            display: none;
-            background: #ff3b3b;
-            color: white;
-            padding: 12px;
-            margin-top: 15px;
-            border-radius: 6px;
-        }
-    </style>
+    #payButton:disabled {
+        background: #444;
+    }
+
+    /* 🔥 Alertas dentro del formulario */
+    .alert {
+        margin-top: 12px;
+        padding: 10px;
+        border-radius: 6px;
+        font-size: 14px;
+        display: none;
+    }
+
+    .alert.error {
+        background: #ff4d4d33;
+        border: 1px solid #ff4d4d;
+        color: #ffbaba;
+    }
+
+    .alert.success {
+        background: #2ecc7033;
+        border: 1px solid #2ecc71;
+        color: #b8ffcc;
+    }
+</style>
 </head>
 
 <body>
 
-    <!-- ⭐⭐⭐ TU BANNER PERSONAL PREMIUM ⭐⭐⭐ -->
-    <div class="ascii-banner">
- ██████╗██╗   ██╗██╗   ██╗    ██╗   ██╗ █████╗ ██╗     ██╗██████╗  █████╗ ████████╗ ██████╗ ██████╗ 
+<!-- ⭐ TU BANNER PREMIUM ⭐ -->
+<div class="ascii-banner">
+██████╗██╗   ██╗██╗   ██╗    ██╗   ██╗ █████╗ ██╗     ██╗██████╗  █████╗ ████████╗ ██████╗ ██████╗ 
 ██╔════╝██║   ██║██║   ██║    ██║   ██║██╔══██╗██║     ██║██╔══██╗██╔══██╗╚══██╔══╝██╔═══██╗██╔══██╗
 ██║     ██║   ██║██║   ██║    ██║   ██║███████║██║     ██║██║  ██║███████║   ██║   ██║   ██║██████╔╝
 ██║     ╚██╗ ██╔╝╚██╗ ██╔╝    ╚██╗ ██╔╝██╔══██║██║     ██║██║  ██║██╔══██║   ██║   ██║   ██║██╔══██╗
 ╚██████╗ ╚████╔╝  ╚████╔╝      ╚████╔╝ ██║  ██║███████╗██║██████╔╝██║  ██║   ██║   ╚██████╔╝██║  ██║
  ╚═════╝  ╚═══╝    ╚═══╝        ╚═══╝  ╚═╝  ╚═╝╚══════╝╚═╝╚═════╝ ╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝
-    </div>
+</div>
 
-    <div class="card-box">
-        <h2>💳 Pago Seguro</h2>
+<div class="card-box">
+    <h2>💳 Pago Seguro</h2>
 
-        <input id="amount" type="number" min="10" value="10" placeholder="Monto en MXN" />
+    <input id="amount" type="number" placeholder="Cantidad (MXN)" />
 
-        <div id="card-element"></div>
+    <div id="card-element"></div>
 
-        <button id="payBtn" class="pay-btn">PAGAR AHORA</button>
+    <button id="payButton">PAGAR AHORA</button>
 
-        <div id="errorBox" class="error-box"></div>
-    </div>
+    <div id="alert" class="alert"></div>
+</div>
 
-    <script>
-        const stripe = Stripe("{{ publishable_key }}");
-        const elements = stripe.elements();
-        const card = elements.create("card", { hidePostalCode: true });
-        card.mount("#card-element");
 
-        const errorBox = document.getElementById("errorBox");
-        const payBtn = document.getElementById("payBtn");
+<script>
+    const stripe = Stripe("YOUR_PUBLISHABLE_KEY"); // 🔥 Reemplaza con tu PK LIVE
+    const elements = stripe.elements();
+    const card = elements.create("card", { hidePostalCode: true });
+    card.mount("#card-element");
 
-        function showError(msg) {
-            errorBox.style.display = "block";
-            errorBox.innerHTML = "❌ " + msg;
+    const alertBox = document.getElementById("alert");
+
+    function showAlert(type, msg) {
+        alertBox.className = "alert " + type;
+        alertBox.innerText = msg;
+        alertBox.style.display = "block";
+    }
+
+    document.getElementById("payButton").addEventListener("click", async () => {
+        alertBox.style.display = "none";
+
+        const amount = Number(document.getElementById("amount").value);
+        if (amount < 10) {
+            showAlert("error", "El monto mínimo es $10 MXN.");
+            return;
         }
 
-        payBtn.addEventListener("click", async () => {
-            errorBox.style.display = "none";
+        const payButton = document.getElementById("payButton");
+        payButton.disabled = true;
+        payButton.innerText = "Procesando...";
 
-            const amount = document.getElementById("amount").value.trim();
-
-            if (!amount || isNaN(amount) || amount < 10) {
-                showError("El monto mínimo es $10 MXN.");
-                return;
-            }
-
-            payBtn.disabled = true;
-            payBtn.innerHTML = "Procesando...";
-
-            const res = await fetch("/create-payment-intent", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ amount: amount })
-            });
-
-            const data = await res.json();
-
-            if (data.error) {
-                showError(data.error);
-                payBtn.disabled = false;
-                payBtn.innerHTML = "PAGAR AHORA";
-                return;
-            }
-
-            const result = await stripe.confirmCardPayment(data.clientSecret, {
-                payment_method: {
-                    card: card
-                }
-            });
-
-            if (result.error) {
-                showError(result.error.message);
-                payBtn.disabled = false;
-                payBtn.innerHTML = "PAGAR AHORA";
-            } else {
-                window.location.href = "/success";
-            }
+        // Crear Intent
+        const res = await fetch("/create-payment-intent", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount })
         });
-    </script>
+
+        const data = await res.json();
+
+        if (!data.clientSecret) {
+            showAlert("error", "Error al crear el intento de pago.");
+            payButton.disabled = false;
+            payButton.innerText = "PAGAR AHORA";
+            return;
+        }
+
+        // Confirmar pago
+        const result = await stripe.confirmCardPayment(data.clientSecret, {
+            payment_method: { card: card }
+        });
+
+        if (result.error) {
+            showAlert("error", "❌ " + result.error.message);
+            payButton.disabled = false;
+            payButton.innerText = "PAGAR AHORA";
+        } else {
+            showAlert("success", "✔ Pago exitoso!");
+            payButton.innerText = "LISTO ✔";
+        }
+    });
+</script>
 
 </body>
 </html>
