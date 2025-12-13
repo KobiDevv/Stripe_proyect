@@ -1,138 +1,92 @@
-<!DOCTYPE html>
+}<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KOBINCDEV | Pago Seguro</title>
+    <title>Pago Seguro</title>
 
+    <!-- Stripe.js -->
     <script src="https://js.stripe.com/v3/"></script>
 
     <style>
         body {
-            background: #0e0f1b;
-            color: #fff;
-            font-family: Arial, sans-serif;
+            background: linear-gradient(180deg, #0a0f2d, #111);
             margin: 0;
             padding: 0;
+            font-family: "Poppins", sans-serif;
+            color: white;
         }
 
-        /* =============================
-           🔥 BANNER GLITCH ANIMADO 🔥
-        ============================== */
-        .kobibanner {
+        .banner {
             width: 100%;
-            white-space: pre;
-            overflow-x: auto;
-            font-family: "Courier New", monospace;
-            font-size: 10px;
-            line-height: 11px;
             text-align: center;
-            color: #6cffea;
-            background: #0a0f1d;
-            padding: 15px 0;
-            border-bottom: 2px solid #1f2a44;
-            position: relative;
+            padding: 20px 0;
+            margin-bottom: -40px;
         }
 
-        .kobibanner::before,
-        .kobibanner::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 15px;
-            left: 0;
-            width: 100%;
-            white-space: pre;
-            overflow-x: auto;
-            clip: rect(0, 900px, 0, 0);
-            animation: glitch 1.8s infinite linear alternate-reverse;
-        }
-
-        .kobibanner::before {
-            color: #ff00c8;
-        }
-
-        .kobibanner::after {
-            color: #00eaff;
-            animation-duration: 2.6s;
-        }
-
-        @keyframes glitch {
-            0% { clip: rect(5px, 9999px, 25px, 0); transform: translate(-2px, -2px); }
-            20% { clip: rect(15px, 9999px, 45px, 0); transform: translate(3px, 2px); }
-            40% { clip: rect(3px, 9999px, 15px, 0); transform: translate(-5px, 1px); }
-            60% { clip: rect(15px, 9999px, 45px, 0); transform: translate(2px, -3px); }
-            80% { clip: rect(8px, 9999px, 20px, 0); transform: translate(-1px, 3px); }
-            100% { clip: rect(12px, 9999px, 39px, 0); transform: translate(4px, -1px); }
-        }
-
-        /* =============================
-           🎴 TARJETA DE PAGO PREMIUM
-        ============================== */
-        .card {
-            background: #1c1d29;
+        .container {
+            width: 420px;
+            margin: 100px auto;
+            background: rgba(255, 255, 255, 0.08);
             padding: 30px;
-            border-radius: 15px;
-            width: 350px;
-            margin: 50px auto;
-            box-shadow: 0 0 20px #0009;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, .4);
         }
 
         .title {
-            font-size: 22px;
             text-align: center;
-            margin-bottom: 20px;
-            color: #9ab3ff;
+            font-size: 22px;
+            margin-bottom: 25px;
         }
 
-        input, #card-element {
+        input {
             width: 100%;
             padding: 12px;
-            margin-bottom: 15px;
             border-radius: 8px;
             border: none;
+            outline: none;
+            margin-bottom: 20px;
             font-size: 16px;
-            background: #262637;
-            color: #fff;
+        }
+
+        #card-element {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
         }
 
         button {
             width: 100%;
-            padding: 12px;
-            background: #6c63ff;
-            border: none;
+            padding: 14px;
             border-radius: 8px;
-            color: white;
+            border: none;
             font-size: 18px;
+            color: white;
+            background: #5a56ff;
             cursor: pointer;
             transition: 0.2s;
         }
 
-        button:hover {
-            background: #827aff;
+        button:disabled {
+            background: #4743b9;
         }
 
-        .loading {
+        .loader {
             display: none;
-            text-align: center;
             margin-top: 10px;
+            text-align: center;
+            color: #ccc;
+            font-size: 14px;
         }
     </style>
 </head>
 
 <body>
 
-    <!-- ===============================
-         BANNER GLITCH KOBINCDEV
-    ================================== -->
-    <pre class="kobibanner" data-text="
-░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░░▒▓█▓▒░      ░▒▓█▓▒░▒▓███████▓▒░ ░▒▓██████▓▒░▒▓████████▓▒░▒▓██████▓▒░░▒▓███████▓▒░  
-░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░░▒▓████████▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░  
-░▒▓█▓▒░        ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
-░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
- ░▒▓██████▓▒░   ░▒▓██▓▒░     ░▒▓██▓▒░            ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░▒▓█▓▒░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░ 
-">
+    <div class="banner">
+<pre style="font-size:9px; line-height: 10px;">
 ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░░▒▓██████▓▒░░▒▓█▓▒░      ░▒▓█▓▒░▒▓███████▓▒░ ░▒▓██████▓▒░▒▓████████▓▒░▒▓██████▓▒░░▒▓███████▓▒░  
 ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░      ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
 ░▒▓█▓▒░       ░▒▓█▓▒▒▓█▓▒░ ░▒▓█▓▒▒▓█▓▒░        ░▒▓█▓▒▒▓█▓▒░░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
@@ -141,38 +95,46 @@
 ░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▓█▓▒░   ░▒▓█▓▓█▓▒░          ░▒▓█▓▓█▓▒░ ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░      ░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░ 
  ░▒▓██████▓▒░   ░▒▓██▓▒░     ░▒▓██▓▒░            ░▒▓██▓▒░  ░▒▓█▓▒░░▒▓█▓▒░▒▓████████▓▒░▒▓█▓▒░▒▓███████▓▒░░▒▓█▓▒░░▒▓█▓▒░ ░▒▓█▓▒░   ░▒▓██████▓▒░░▒▓█▓▒░░▒▓█▓▒░ 
 </pre>
+    </div>
 
-
-    <div class="card">
+    <div class="container">
         <div class="title">💳 Pago Seguro</div>
 
-        <input id="amount
-        <input id="amount" type="number" placeholder="Monto en MXN" value="50">
+        <!-- Campo corregido -->
+        <input type="number" id="amount" value="50" placeholder="Monto en MXN">
 
+        <!-- Stripe card element -->
         <div id="card-element"></div>
 
-        <button id="payBtn">PAGAR AHORA</button>
+        <button id="payButton">PAGAR AHORA</button>
 
-        <div class="loading" id="loading">Procesando pago...</div>
-        <p id="message"></p>
+        <div class="loader" id="loader">Procesando pago...</div>
     </div>
 
     <script>
         const stripe = Stripe("{{ publishable_key }}");
+
         const elements = stripe.elements();
         const card = elements.create("card", { hidePostalCode: true });
         card.mount("#card-element");
 
-        document.getElementById("payBtn").addEventListener("click", async () => {
-            const amount = document.getElementById("amount").value;
-            const loading = document.getElementById("loading");
-            const btn = document.getElementById("payBtn");
-            const msg = document.getElementById("message");
+        const payButton = document.getElementById("payButton");
+        const loader = document.getElementById("loader");
 
-            btn.disabled = true;
-            loading.style.display = "block";
-            msg.innerHTML = "";
+        payButton.addEventListener("click", async () => {
+            const amountField = document.getElementById("amount");
 
+            if (!amountField || !amountField.value) {
+                alert("Ingresa un monto válido");
+                return;
+            }
+
+            const amount = amountField.value;
+
+            payButton.disabled = true;
+            loader.style.display = "block";
+
+            // 1 — solicitar PaymentIntent al backend
             const res = await fetch("/create-payment-intent", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -182,23 +144,24 @@
             const data = await res.json();
 
             if (data.error) {
-                loading.style.display = "none";
-                btn.disabled = false;
-                msg.innerHTML = "❌ Error: " + data.error;
+                alert("Error: " + data.error);
+                payButton.disabled = false;
+                loader.style.display = "none";
                 return;
             }
 
-            const { paymentIntent, error } = await stripe.confirmCardPayment(
-                data.clientSecret,
-                { payment_method: { card: card } }
-            );
+            // 2 — confirmar pago
+            const result = await stripe.confirmCardPayment(data.clientSecret, {
+                payment_method: {
+                    card: card
+                }
+            });
 
-            loading.style.display = "none";
-            btn.disabled = false;
-
-            if (error) {
-                msg.innerHTML = "❌ " + error.message;
-            } else if (paymentIntent.status === "succeeded") {
+            if (result.error) {
+                alert("Error en el pago: " + result.error.message);
+                payButton.disabled = false;
+                loader.style.display = "none";
+            } else {
                 window.location.href = "/success";
             }
         });
